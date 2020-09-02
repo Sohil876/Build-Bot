@@ -1,0 +1,6 @@
+---
+engines:
+  pylintpython3:
+    enabled: true
+    language: python
+    python_version: 3
