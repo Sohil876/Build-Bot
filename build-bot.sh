@@ -1,5 +1,9 @@
 #!/bin/bash
-### Build-Bot By @Sohil876 ###
+#
+#-# Build-Bot
+#-# By @Sohil876
+#-# https://github.com/Sohil876/Build-Bot
+#
 
 ### Color Codes ###
 red='\e[0;31m'             # Red
@@ -18,13 +22,36 @@ banner() {
   echo -e "${green}--------------------------------------${nocol}"
 }
 
-export_config() {
+check_rom_dir() {
   # Checking if this is a rom directory and repo is initialised
   if [ ! -d ".repo" ]; then
-      echo "Not a rom directory!"
-      echo "Please make sure you're in the rom directory to export config file"
-      exit 1
+    echo "Not a rom directory!"
+    echo "Please make sure you're in the rom directory."
+    exit 1
   fi
+}
+
+clean_build() {
+  check_rom_dir
+  # Clean RAM
+  free_up_ram
+  # Import config/scripts from rom directory
+  source "${ROM_FOLDER}"/conf.rom
+  source "${ROM_FOLDER}"/build/envsetup.sh
+  # Start cleaning
+  echo "Cleaning build ... "
+  echo "This can take 5 to 10 mins! Do not Cancel!"
+  make clobber -j$( nproc --all ) && make clean -j$( nproc --all )
+}
+
+free_up_ram() {
+  # Cleaning RAM
+  sudo sh -c "sync"
+  sudo sh -c "echo 3 > /proc/sys/vm/drop_caches"
+}
+
+export_config() {
+  check_rom_dir
   # Checking if rom config file is present to prevent overwrite
   if [ ! -f "conf.rom" ]; then
     # Export conf file to rom dir
@@ -38,8 +65,8 @@ export_config() {
 	BUILD_TYPE=OFFICIAL
 	PRECOMPILE_METALAVA=false # Enable if less than 16GB RAM
 	MAKE_COMMAND="blissify tissot" # Enter your full build command inside quotes, ex. mka bacon, blissify tissot, ./rom-build.sh, etc
-	ROM_FOLDER=${PWD} # Use for getting location of your rom directory root
-	OUT=${ROM_FOLDER}/out/target/product/${DEVICE}
+	ROM_FOLDER="${PWD}" # Use for getting location of your rom directory root
+	OUT="${ROM_FOLDER}"/out/target/product/"${DEVICE}"
 	BUILD_START=$(date +"%s")
 	# Enter your full upload command here inside quotes to enable it, make sure you enter part of filename as well
 	# Ex "mega-put ${ROM_FOLDER}/out/target/product/tissot/Bliss*.zip Tst_Folder/"
@@ -47,7 +74,7 @@ export_config() {
 	# Exports
 	export JAVA_OPTIONS=-Xmx4g
 	export LC_ALL=C # For Ubuntu18
-	export BUILD_TYPE=${BUILD_TYPE}
+	export BUILD_TYPE="${BUILD_TYPE}"
 	export USE_CCACHE=1
 	export CCACHE_EXEC=$(command -v ccache)
 	export CCACHE_DIR=~/.ccache
@@ -59,7 +86,7 @@ export_config() {
 	CHAT_ID="YOUR CHAT ID"
 _EOL_
   else
-    echo "Config file already exist!"
+    echo "Config file already exists!"
     exit 1
   fi
 }
@@ -67,23 +94,42 @@ _EOL_
 help() {
   cat <<_EOL_
 $(echo -e "${green}Usage:${nocol}")
--ec, --export-config    Exports a sample config file to your current rom directory
 -h,  --help             Shows brief help
 -i,  --install          Install Build-Bot in /usr/bin
+-ec, --export-config    Exports a sample config file to your current rom directory
+-cb, --clean-build      Do make clobber and clean on build
+-sc, --shallow-clean    Do installclean and deviceclean for faster build
 _EOL_
 }
 
 install() {
-  cp -f ${PWD}/build-bot.sh /usr/bin/build-bot
+  cp -f "${PWD}"/build-bot.sh /usr/bin/build-bot
   if [ $? -ne 0 ]; then
-    echo "Permission denied, rerun command with sudo!"
+    echo "Permission denied, re-run command with sudo!"
   else
     chmod +x /usr/bin/build-bot
   fi
 }
 
+shallow_clean() {
+  # Clean RAM
+  free_up_ram
+  # Import config/scripts from rom directory
+  source "${ROM_FOLDER}"/conf.rom
+  source "${ROM_FOLDER}"/build/envsetup.sh
+  # Start cleaning
+  echo "Cleaning build ... "
+  make installclean -j$( nproc --all ) && make deviceclean -j$( nproc --all )
+}
+
 ### Main program ###
 case ${@} in
+  -cb|--clean-build)
+    echo ""
+    clean_build
+    echo ""
+    exit 0
+  ;;
   -ec|--export-config)
     echo ""
     export_config
@@ -104,6 +150,12 @@ case ${@} in
     install
     echo "Installed Build-Bot!"
     echo "Make use of conf files to use build-bot with multiple roms!"
+    echo ""
+    exit 0
+  ;;
+  -sc|--shallow-clean)
+    echo ""
+    shallow_clean
     echo ""
     exit 0
   ;;
