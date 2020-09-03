@@ -8,8 +8,6 @@
 ### Color Codes ###
 red='\e[0;31m'             # Red
 green='\e[0;32m'        # Green
-#yellow='\e[0;33m'       # Yellow
-#purple='\e[0;35m'       # Purple
 cyan='\e[0;36m'          # Cyan
 white='\e[0;37m'        # White
 nocol='\033[0m'         # Default
@@ -33,12 +31,10 @@ check_rom_dir() {
 
 clean_build() {
   check_rom_dir
-  # Clean RAM
   free_up_ram
-  # Import config/scripts from rom directory
-  source "${ROM_FOLDER}"/conf.rom
-  source "${ROM_FOLDER}"/build/envsetup.sh
-  # Start cleaning
+  source conf.rom
+  source build/envsetup.sh
+  # Start Cleaning
   echo "Cleaning build ... "
   echo "This can take 5 to 10 mins! Do not Cancel!"
   make clobber -j$( nproc --all ) && make clean -j$( nproc --all )
@@ -56,7 +52,7 @@ export_config() {
   if [ ! -f "conf.rom" ]; then
     # Export conf file to rom dir
     cat >conf.rom <<-'_EOL_'
-	# Configuration file
+	# Build-Bot Configuration file
 	# Adapt it for your rom
 	ROM_NAME=BlissROM
 	ROM=bliss
@@ -67,7 +63,6 @@ export_config() {
 	MAKE_COMMAND="blissify tissot" # Enter your full build command inside quotes, ex. mka bacon, blissify tissot, ./rom-build.sh, etc
 	ROM_FOLDER="${PWD}" # Use for getting location of your rom directory root
 	OUT="${ROM_FOLDER}"/out/target/product/"${DEVICE}"
-	BUILD_START=$(date +"%s")
 	# Enter your full upload command here inside quotes to enable it, make sure you enter part of filename as well
 	# Ex "mega-put ${ROM_FOLDER}/out/target/product/tissot/Bliss*.zip Tst_Folder/"
 	AUTO_UPLOAD=false
@@ -92,34 +87,50 @@ _EOL_
 }
 
 help() {
-  cat <<_EOL_
+  cat <<-_EOL_
 $(echo -e "${green}Usage:${nocol}")
 -h,  --help             Shows brief help
 -i,  --install          Install Build-Bot in /usr/bin
 -ec, --export-config    Exports a sample config file to your current rom directory
 -cb, --clean-build      Do make clobber and clean on build
 -sc, --shallow-clean    Do installclean and deviceclean for faster build
+-sr, --sync-rom         Sync rom
 _EOL_
 }
 
-install() {
-  cp -f "${PWD}"/build-bot.sh /usr/bin/build-bot
-  if [ $? -ne 0 ]; then
-    echo "Permission denied, re-run command with sudo!"
-  else
-    chmod +x /usr/bin/build-bot
-  fi
-}
-
 shallow_clean() {
-  # Clean RAM
+  check_rom_dir
   free_up_ram
   # Import config/scripts from rom directory
-  source "${ROM_FOLDER}"/conf.rom
-  source "${ROM_FOLDER}"/build/envsetup.sh
+  source conf.rom
+  source build/envsetup.sh
   # Start cleaning
   echo "Cleaning build ... "
   make installclean -j$( nproc --all ) && make deviceclean -j$( nproc --all )
+}
+
+sync_rom() {
+  check_rom_dir
+  free_up_ram
+  source conf.rom
+  SYNC_START=$(date +"%s")
+  # Report to tg group/channel
+  read -r -d '' MESSAGE <<_EOL_
+  *Sync Started! @* $(date "+%I:%M%p") ($(date +"%Z%:z"))
+  *Syncing:* ${ROM_NAME}
+_EOL_
+  curl -s -X POST -d chat_id="${CHAT_ID}" -d parse_mode=markdown -d text="${MESSAGE}" https://api.telegram.org/bot"${TOKEN}"/sendMessage
+  # Start syncing
+  repo sync -c -j$(nproc --all) --no-tags --no-clone-bundle --force-sync 2>&1 | tee sync.log
+  SYNC_END=$(date +"%s")
+  DIFF=$(("${SYNC_END}" - "${SYNC_START}"))
+  # Sync succeded! report to tg group/channel
+  read -r -d '' MESSAGE <<_EOL_
+  *Sync Finished!*
+   
+  *Time:* $((DIFF / 60)) minutes and $((DIFF % 60)) seconds
+_EOL_
+  curl -F chat_id="${CHAT_ID}" -F document=@"${ROM_FOLDER}"/sync.log -F parse_mode=markdown -F caption="${MESSAGE}" https://api.telegram.org/bot"${TOKEN}"/sendDocument
 }
 
 ### Main program ###
@@ -147,7 +158,12 @@ case ${@} in
   ;;
   -i|--install)
     echo ""
-    install
+    cp -f "${PWD}"/build-bot.sh /usr/bin/build-bot
+    if [ $? -ne 0 ]; then
+      echo "Permission denied, re-run command with sudo!"
+    else
+      chmod +x /usr/bin/build-bot
+    fi
     echo "Installed Build-Bot!"
     echo "Make use of conf files to use build-bot with multiple roms!"
     echo ""
@@ -156,6 +172,12 @@ case ${@} in
   -sc|--shallow-clean)
     echo ""
     shallow_clean
+    echo ""
+    exit 0
+  ;;
+  -sr|--sync-rom)
+    echo ""
+    sync_rom
     echo ""
     exit 0
   ;;
