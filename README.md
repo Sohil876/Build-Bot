@@ -4,4 +4,6 @@
 
 **Instructions:**
 
--   Give -h or --help argument to script for help and available commands.
+-   Give -h or --help argument to script for help and see available commands.
+-   You have to export sample config file to your rom dir with -ec option, edit that conf.rom file with some text editor, set your settings there correctly, done.
+-   You can install the script in path (/usr/bin) to use it from any directory, just give it -i argument.
