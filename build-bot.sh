@@ -22,12 +22,7 @@ banner() {
 
 build_rom() {
   check_rom_dir
-  # Checking if rom config file is present and import it
-  if [ ! -f "conf.rom" ]; then
-    echo "Rom config not found!"
-    echo "Export config file using buildbot -ec and configure it first!"
-    exit 1
-  fi
+  check_config_file
   source conf.rom
   # Removing old builds
   rm "${OUT}"/*.zip
@@ -49,7 +44,7 @@ build_rom() {
 *Build Started! @* $(date "+%I:%M%p") ($(date +"%Z%:z"))
 *Building :* ${ROM_NAME}
 *Build Type :* ${BUILD_TYPE}
-*CPUs :* $(nproc --all) *RAM :* (awk '/MemTotal/ { printf "%.1f \n", $2/1024/1024 }' /proc/meminfo)+"GB")
+*CPUs :* $(nproc --all) *RAM :* $(awk '/MemTotal/ { printf "%.1f \n", $2/1024/1024 }' /proc/meminfo)GB
 _EOL_
   curl -s -X POST -d chat_id="${CHAT_ID}" -d parse_mode=markdown -d text="${MESSAGE}" https://api.telegram.org/bot"${TOKEN}"/sendMessage
   # Start the build
@@ -82,6 +77,15 @@ _EOL_
   # Shutdown instance to save credits :P
   sleep 5m
   sudo shutdown -h now
+}
+
+check_config_file() {
+  # Checking if rom config file is present and import it
+  if [ ! -f "conf.rom" ]; then
+    echo "Rom config not found!"
+    echo "Export config file using buildbot -ec and configure it first!"
+    exit 1
+  fi
 }
 
 check_rom_dir() {
@@ -136,6 +140,7 @@ shallow_clean() {
 
 sync_rom() {
   check_rom_dir
+  check_config_file
   free_up_ram
   source conf.rom
   SYNC_START=$(date +"%s")
