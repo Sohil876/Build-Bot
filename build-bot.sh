@@ -36,7 +36,7 @@ build_rom() {
   # Precompile Metalava if enabled in config
   if [ "${PRECOMPILE_METALAVA}" = true ]; then
     echo "PreCompiling Metalava!"
-    mka api-stubs-docs -j$( nproc --all ) && mka hiddenapi-lists-docs -j$( nproc --all ) && mka system-api-stubs-docs -j$( nproc --all ) && mka test-api-stubs-docs -j$( nproc --all ) 2>&1 | tee build-metalava.log
+    mka api-stubs-docs -j$( nproc --all ) && mka hiddenapi-lists-docs -j$( nproc --all ) && mka system-api-stubs-docs -j$( nproc --all ) && mka test-api-stubs-docs -j$( nproc --all ) 2>&1 | tee "${ROM}"-build-metalava.log
   fi
   free_up_ram
   # Report to tg group/channel
@@ -62,7 +62,6 @@ _EOL_
   # Send msg to telegram
   read -r -d '' MESSAGE <<-_EOL_
 *BUILD SUCCESSFULL!*
-
 *Time :* $((DIFF / 60)) minutes and $((DIFF % 60)) seconds
 *Date :* $(date +"%Y-%m-%d")
 _EOL_
@@ -151,16 +150,20 @@ sync_rom() {
 _EOL_
   curl -s -X POST -d chat_id="${CHAT_ID}" -d parse_mode=markdown -d text="${MESSAGE}" https://api.telegram.org/bot"${TOKEN}"/sendMessage
   # Start syncing
-  repo sync -c -j$(nproc --all) --no-tags --no-clone-bundle --force-sync 2>&1 | tee sync.log
+  # Insert with atguments if set in config sync variable
+  if [ "${SYNC_ARGUMENTS}" = false ]; then
+    repo sync
+  else
+    repo sync ${SYNC_ARGUMENTS}
+  fi
   SYNC_END=$(date +"%s")
   DIFF=$((SYNC_END - SYNC_START))
   # Sync succeded! report to tg group/channel
   read -r -d '' MESSAGE <<-_EOL_
 *Sync Finished!*
-
 *Time :* $((DIFF / 60)) minutes and $((DIFF % 60)) seconds
 _EOL_
-  curl -F chat_id="${CHAT_ID}" -F document=@"${ROM_FOLDER}"/sync.log -F parse_mode=markdown -F caption="${MESSAGE}" https://api.telegram.org/bot"${TOKEN}"/sendDocument
+  curl -s -X POST -d chat_id="${CHAT_ID}" -d parse_mode=markdown -d text="${MESSAGE}" https://api.telegram.org/bot"${TOKEN}"/sendMessage
 }
 
 ### Main program ###
@@ -192,6 +195,7 @@ DEVICE=tissot
 TARGET=user
 BUILD_TYPE=OFFICIAL
 PRECOMPILE_METALAVA=false # Enable if less than 16GB RAM
+SYNC_ARGUMENTS=false # Set arguments in here to use them with sync, ex "-c -j$(nproc --all) --no-tags --no-clone-bundle --force-sync"
 MAKE_COMMAND="blissify tissot" # Enter your full build command inside quotes, ex. mka bacon, blissify tissot, ./rom-build.sh, etc
 ROM_FOLDER="${PWD}" # Use for getting location of your rom directory root
 OUT="${ROM_FOLDER}"/out/target/product/"${DEVICE}"
