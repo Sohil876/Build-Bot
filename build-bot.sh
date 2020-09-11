@@ -36,7 +36,7 @@ build_rom() {
   # Precompile Metalava if enabled in config
   if [ "${PRECOMPILE_METALAVA}" = true ]; then
     echo "PreCompiling Metalava!"
-    mka api-stubs-docs -j$( nproc --all ) && mka hiddenapi-lists-docs -j$( nproc --all ) && mka system-api-stubs-docs -j$( nproc --all ) && mka test-api-stubs-docs -j$( nproc --all ) 2>&1 | tee "${ROM}"-build-metalava.log
+    make api-stubs-docs -j$( nproc --all ) && make hiddenapi-lists-docs -j$( nproc --all ) && make system-api-stubs-docs -j$( nproc --all ) && make test-api-stubs-docs -j$( nproc --all ) 2>&1 | tee "${ROM}"-build-metalava.log
   fi
   free_up_ram
   # Report to tg group/channel
