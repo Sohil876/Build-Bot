@@ -53,7 +53,7 @@ _EOL_
   if [ ! -f "${OUT}"/*"${TYPE}"*.zip ]; then
     echo -e "Build compilation failed, I will shutdown the instance in 5 minutes!"
     curl -F chat_id="${CHAT_ID}" -F document=@"${ROM_FOLDER}"/"${ROM}"-build.log -F caption="Build Failed!" https://api.telegram.org/bot"${TOKEN}"/sendDocument
-    sleep 5m
+    sleep "${SHUTDOWN_TIME}"
     sudo shutdown -h now
   fi
   # Build Sucessfull!
@@ -74,7 +74,7 @@ _EOL_
     ${AUTO_UPLOAD}
   fi
   # Shutdown instance to save credits :P
-  sleep 5m
+  sleep "${SHUTDOWN_TIME}"
   sudo shutdown -h now
 }
 
@@ -154,7 +154,7 @@ _EOL_
   if [ "${SYNC_ARGUMENTS}" = false ]; then
     repo sync
   else
-    repo sync ${SYNC_ARGUMENTS}
+    repo sync "${SYNC_ARGUMENTS}"
   fi
   SYNC_END=$(date +"%s")
   DIFF=$((SYNC_END - SYNC_START))
@@ -189,21 +189,23 @@ case ${@} in
       cat >conf.rom <<-'_EOL_'
 # Build-Bot Configuration file
 # Adapt it for your rom
-ROM_NAME=BlissROM
-ROM=bliss
-DEVICE=tissot
-TARGET=user
-BUILD_TYPE=OFFICIAL
-PRECOMPILE_METALAVA=false # Enable if less than 16GB RAM
-SYNC_ARGUMENTS=false # Set arguments in here to use them with sync, ex "-c -j$(nproc --all) --no-tags --no-clone-bundle --force-sync"
+# Make sure any values that require space or special characters are inside quotes (single or double)
+ROM_NAME="BlissROM" # For now dont use space or special characters, will phix
+ROM="bliss"
+DEVICE="tissot"
+TARGET="user"
+BUILD_TYPE="OFFICIAL" # For now dont use space or special characters, will phix
+PRECOMPILE_METALAVA="false" # Enable if less than 16GB RAM
+SYNC_ARGUMENTS="false" # Set arguments in here to use them with sync, ex "-c -j$(nproc --all) --no-tags --no-clone-bundle --force-sync"
 MAKE_COMMAND="blissify tissot" # Enter your full build command inside quotes, ex. mka bacon, blissify tissot, ./rom-build.sh, etc
 ROM_FOLDER="${PWD}" # Use for getting location of your rom directory root
+SHUTDOWN_TIME="5m" # No in minutes after which the bot will trigger shutdown when specifed
 OUT="${ROM_FOLDER}"/out/target/product/"${DEVICE}"
 # Enter your full upload command here inside quotes to enable it, make sure you enter part of filename as well
-# Ex "mega-put ${ROM_FOLDER}/out/target/product/tissot/Bliss*.zip Tst_Folder/"
-AUTO_UPLOAD=false
+# Ex "mega-put ${OUT}/Bliss*.zip Tst_Folder/"
+AUTO_UPLOAD="false"
 # Exports
-export JAVA_OPTIONS=-Xmx4g
+#export JAVA_OPTIONS=-Xmx4g # Java heapsize
 export LC_ALL=C # For Ubuntu18
 export BUILD_TYPE="${BUILD_TYPE}"
 export USE_CCACHE=1
