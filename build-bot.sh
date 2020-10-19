@@ -41,19 +41,20 @@ build_rom() {
   free_up_ram
   # Report to tg group/channel
   read -r -d '' MESSAGE <<-_EOL_
-*Build Started! @* $(date "+%I:%M%p") ($(date +"%Z%:z"))
-*Building :* ${ROM_NAME}
-*Build Type :* ${BUILD_TYPE}
-*CPUs :* $(nproc --all) *RAM :* $(awk '/MemTotal/ { printf "%.1f \n", $2/1024/1024 }' /proc/meminfo)GB
+<strong>Build Started! @</strong> $(date "+%I:%M%p") ($(date +"%Z%:z"))
+<strong>Building :</strong> ${ROM_NAME}
+<strong>Build Type :</strong> ${BUILD_TYPE}
+<strong>Target :</strong> ${TARGET}
+<strong>CPUs :</strong> $(nproc --all) <strong>RAM :</strong> $(awk '/MemTotal/ { printf "%.1f \n", $2/1024/1024 }' /proc/meminfo)GB
 _EOL_
-  curl -s -X POST -d chat_id="${CHAT_ID}" -d parse_mode=markdown -d text="${MESSAGE}" https://api.telegram.org/bot"${TOKEN}"/sendMessage
+  curl -s -X POST -d chat_id="${CHAT_ID}" -d parse_mode=html -d text="${MESSAGE}" https://api.telegram.org/bot"${TOKEN}"/sendMessage
   # Start the build
   ${MAKE_COMMAND} 2>&1 | tee "${ROM}"-build.log
   # Build failed!
   if [ ! -f "${OUT}"/*"${TYPE}"*.zip ]; then
-    echo -e "Build compilation failed, I will shutdown the instance in 5 minutes!"
+    echo -e "${green}Build compilation failed, I will shutdown the instance in ${SHUTDOWN_TIME} minutes! ${nocol}"
     curl -F chat_id="${CHAT_ID}" -F document=@"${ROM_FOLDER}"/"${ROM}"-build.log -F caption="Build Failed!" https://api.telegram.org/bot"${TOKEN}"/sendDocument
-    sleep "${SHUTDOWN_TIME}"
+    sleep "${SHUTDOWN_TIME}"m
     sudo shutdown -h now
   fi
   # Build Sucessfull!
@@ -61,11 +62,11 @@ _EOL_
   DIFF=$((BUILD_END - BUILD_START))
   # Send msg to telegram
   read -r -d '' MESSAGE <<-_EOL_
-*BUILD SUCCESSFULL!*
-*Time :* $((DIFF / 60)) minutes and $((DIFF % 60)) seconds
-*Date :* $(date +"%Y-%m-%d")
+<strong>BUILD SUCCESSFULL!</strong>
+<strong>Time :</strong> $((DIFF / 60)) minutes and $((DIFF % 60)) seconds
+<strong>Date :</strong> $(date +"%Y-%m-%d")
 _EOL_
-  curl -F chat_id="${CHAT_ID}" -F document=@"${ROM_FOLDER}"/"${ROM}"-build.log -F parse_mode=markdown -F caption="${MESSAGE}" https://api.telegram.org/bot"${TOKEN}"/sendDocument
+  curl -F chat_id="${CHAT_ID}" -F document=@"${ROM_FOLDER}"/"${ROM}"-build.log -F parse_mode=html -F caption="${MESSAGE}" https://api.telegram.org/bot"${TOKEN}"/sendDocument
   # Autoupload if set
   if [ "$AUTO_UPLOAD" = false ]; then
     :
@@ -74,15 +75,15 @@ _EOL_
     ${AUTO_UPLOAD}
   fi
   # Shutdown instance to save credits :P
-  sleep "${SHUTDOWN_TIME}"
+  sleep "${SHUTDOWN_TIME}"m
   sudo shutdown -h now
 }
 
 check_config_file() {
   # Checking if rom config file is present and import it
   if [ ! -f "conf.rom" ]; then
-    echo "Rom config not found!"
-    echo "Export config file using buildbot -ec and configure it first!"
+    echo "${green}Rom config not found!"
+    echo "Export config file using buildbot -ec and configure it first! ${nocol}"
     exit 1
   fi
 }
@@ -90,8 +91,8 @@ check_config_file() {
 check_rom_dir() {
   # Checking if this is a rom directory and repo is initialised
   if [ ! -d ".repo" ]; then
-    echo "Not a rom directory!"
-    echo "Please make sure you're in the rom directory."
+    echo "${green}Not a rom directory!"
+    echo "Please make sure you're in the rom directory.${nocol}"
     exit 1
   fi
 }
@@ -103,7 +104,7 @@ clean_build() {
   source build/envsetup.sh
   # Start Cleaning
   echo "Cleaning build ... "
-  echo "This can take 5 to 10 mins! Do not Cancel!"
+  echo "${green}This can take 15 mins! Do not Cancel! ${nocol}"
   make clobber -j$( nproc --all ) && make clean -j$( nproc --all )
 }
 
@@ -134,6 +135,7 @@ shallow_clean() {
   source build/envsetup.sh
   # Start cleaning
   echo "Cleaning build ... "
+  echo "${green}This can take 5 to 10 mins! Do not Cancel! ${nocol}"
   make installclean -j$( nproc --all ) && make deviceclean -j$( nproc --all )
 }
 
@@ -145,10 +147,10 @@ sync_rom() {
   SYNC_START=$(date +"%s")
   # Report to tg group/channel
   read -r -d '' MESSAGE <<-_EOL_
-*Sync Started! @* $(date "+%I:%M%p") ($(date +"%Z%:z"))
-*Syncing:* ${ROM_NAME}
+<strong>Sync Started! @</strong> $(date "+%I:%M%p") ($(date +"%Z%:z"))
+<strong>Syncing:</strong> ${ROM_NAME}
 _EOL_
-  curl -s -X POST -d chat_id="${CHAT_ID}" -d parse_mode=markdown -d text="${MESSAGE}" https://api.telegram.org/bot"${TOKEN}"/sendMessage
+  curl -s -X POST -d chat_id="${CHAT_ID}" -d parse_mode=html -d text="${MESSAGE}" https://api.telegram.org/bot"${TOKEN}"/sendMessage
   # Start syncing
   # Insert with atguments if set in config sync variable
   if [ "${SYNC_ARGUMENTS}" = false ]; then
@@ -160,10 +162,10 @@ _EOL_
   DIFF=$((SYNC_END - SYNC_START))
   # Sync succeded! report to tg group/channel
   read -r -d '' MESSAGE <<-_EOL_
-*Sync Finished!*
-*Time :* $((DIFF / 60)) minutes and $((DIFF % 60)) seconds
+<strong>Sync Finished!</strong>
+<strong>Time :</strong> $((DIFF / 60)) minutes and $((DIFF % 60)) seconds
 _EOL_
-  curl -s -X POST -d chat_id="${CHAT_ID}" -d parse_mode=markdown -d text="${MESSAGE}" https://api.telegram.org/bot"${TOKEN}"/sendMessage
+  curl -s -X POST -d chat_id="${CHAT_ID}" -d parse_mode=html -d text="${MESSAGE}" https://api.telegram.org/bot"${TOKEN}"/sendMessage
 }
 
 ### Main program ###
@@ -189,17 +191,17 @@ case ${@} in
       cat >conf.rom <<-'_EOL_'
 # Build-Bot Configuration file
 # Adapt it for your rom
-# Make sure any values that require space or special characters are inside quotes (single or double)
-ROM_NAME="BlissROM" # For now dont use space or special characters, will phix
+# Make sure that values are always inside quotes (single or double)
+ROM_NAME="BlissROM"
 ROM="bliss"
 DEVICE="tissot"
 TARGET="user"
-BUILD_TYPE="OFFICIAL" # For now dont use space or special characters, will phix
+BUILD_TYPE="OFFICIAL"
 PRECOMPILE_METALAVA="false" # Enable if less than 16GB RAM
 SYNC_ARGUMENTS="false" # Set arguments in here to use them with sync, ex "-c -j$(nproc --all) --no-tags --no-clone-bundle --force-sync"
 MAKE_COMMAND="blissify tissot" # Enter your full build command inside quotes, ex. mka bacon, blissify tissot, ./rom-build.sh, etc
 ROM_FOLDER="${PWD}" # Use for getting location of your rom directory root
-SHUTDOWN_TIME="5m" # No in minutes after which the bot will trigger shutdown when specifed
+SHUTDOWN_TIME="5" # Minutes after which the bot will trigger shutdown when specifed
 OUT="${ROM_FOLDER}"/out/target/product/"${DEVICE}"
 # Enter your full upload command here inside quotes to enable it, make sure you enter part of filename as well
 # Ex "mega-put ${OUT}/Bliss*.zip Tst_Folder/"
@@ -239,6 +241,7 @@ _EOL_
     cp -f "${PWD}"/build-bot.sh /usr/bin/build-bot
     if [ $? -ne 0 ]; then
       echo "Permission denied, re-run command with sudo!"
+      exit 1
     else
       chmod +x /usr/bin/build-bot
     fi
