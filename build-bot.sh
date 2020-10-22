@@ -41,11 +41,12 @@ build_rom() {
   free_up_ram
   # Report to tg group/channel
   read -r -d '' MESSAGE <<-_EOL_
-<strong>Build Started! @</strong> $(date "+%I:%M%p") ($(date +"%Z%:z"))
+<strong>Build Started!</strong>
+<strong>@</strong> $(date "+%I:%M%p") ($(date +"%Z%:z"))
 <strong>Building :</strong> ${ROM_NAME}
 <strong>Build Type :</strong> ${BUILD_TYPE}
 <strong>Target :</strong> ${TARGET}
-<strong>CPUs :</strong> $(nproc --all) <strong>RAM :</strong> $(awk '/MemTotal/ { printf "%.1f \n", $2/1024/1024 }' /proc/meminfo)GB
+<strong>CPUs :</strong> $(nproc --all) <strong> | </strong> <strong>RAM :</strong> $(awk '/MemTotal/ { printf "%.1f \n", $2/1024/1024 }' /proc/meminfo)GB
 _EOL_
   curl -s -X POST -d chat_id="${CHAT_ID}" -d parse_mode=html -d text="${MESSAGE}" https://api.telegram.org/bot"${TOKEN}"/sendMessage
   # Start the build
@@ -66,7 +67,8 @@ _EOL_
 <strong>Time :</strong> $((DIFF / 60)) minutes and $((DIFF % 60)) seconds
 <strong>Date :</strong> $(date +"%Y-%m-%d")
 _EOL_
-  curl -F chat_id="${CHAT_ID}" -F document=@"${ROM_FOLDER}"/"${ROM}"-build.log -F parse_mode=html -F caption="${MESSAGE}" https://api.telegram.org/bot"${TOKEN}"/sendDocument
+  curl -s -X POST -d chat_id=$CHAT_ID -d parse_mode=html -d text="${MESSAGE}" https://api.telegram.org/bot"${TOKEN}"/sendMessage
+  curl -F chat_id="${CHAT_ID}" -F document=@"${ROM_FOLDER}"/"${ROM}"-build.log -F caption="" https://api.telegram.org/bot"${TOKEN}"/sendDocument
   # Autoupload if set
   if [ "$AUTO_UPLOAD" = false ]; then
     :
