@@ -43,6 +43,7 @@ build_rom() {
   read -r -d '' MESSAGE <<-_EOL_
 <strong>Build Started!</strong>
 <strong>@</strong> $(date "+%I:%M%p") ($(date +"%Z%:z"))
+<strong>CPUs :</strong> $(nproc --all) <strong>|</strong> <strong>RAM :</strong> $(awk '/MemTotal/ { printf "%.1f \n", $2/1024/1024 }' /proc/meminfo)GB
 <strong>Building :</strong> ${ROM_NAME}
 <strong>Build Type :</strong> ${BUILD_TYPE}
 <strong>Target :</strong> ${TARGET}
