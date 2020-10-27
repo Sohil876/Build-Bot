@@ -150,7 +150,8 @@ sync_rom() {
   SYNC_START=$(date +"%s")
   # Report to tg group/channel
   read -r -d '' MESSAGE <<-_EOL_
-<strong>Sync Started! @</strong> $(date "+%I:%M%p") ($(date +"%Z%:z"))
+<strong>Sync Started!</strong>
+<strong>@</strong> $(date "+%I:%M%p") ($(date +"%Z%:z"))
 <strong>Syncing:</strong> ${ROM_NAME}
 _EOL_
   curl -s -X POST -d chat_id="${CHAT_ID}" -d parse_mode=html -d text="${MESSAGE}" https://api.telegram.org/bot"${TOKEN}"/sendMessage
@@ -159,7 +160,7 @@ _EOL_
   if [ "${SYNC_ARGUMENTS}" = false ]; then
     repo sync
   else
-    repo sync "${SYNC_ARGUMENTS}"
+    repo sync ${SYNC_ARGUMENTS}
   fi
   SYNC_END=$(date +"%s")
   DIFF=$((SYNC_END - SYNC_START))
@@ -169,6 +170,14 @@ _EOL_
 <strong>Time :</strong> $((DIFF / 60)) minutes and $((DIFF % 60)) seconds
 _EOL_
   curl -s -X POST -d chat_id="${CHAT_ID}" -d parse_mode=html -d text="${MESSAGE}" https://api.telegram.org/bot"${TOKEN}"/sendMessage
+  # Shutdown if enabled
+  if [ "$SHUTDOWN_AFTER_SYNC" = true ]; then
+    # Shutdown instance to save credits :P
+    sleep "${SHUTDOWN_TIME}"m
+    sudo shutdown -h now
+  else
+    :
+  fi
 }
 
 ### Main program ###
@@ -204,6 +213,7 @@ PRECOMPILE_METALAVA="false" # Enable if less than 16GB RAM
 SYNC_ARGUMENTS="false" # Set arguments in here to use them with sync, ex "-c -j$(nproc --all) --no-tags --no-clone-bundle --force-sync"
 MAKE_COMMAND="blissify tissot" # Enter your full build command inside quotes, ex. mka bacon, blissify tissot, ./rom-build.sh, etc
 ROM_FOLDER="${PWD}" # Use for getting location of your rom directory root
+SHUTDOWN_AFTER_SYNC="false" # Set to true to shutdown after syncing
 SHUTDOWN_TIME="5" # Minutes after which the bot will trigger shutdown when specifed
 OUT="${ROM_FOLDER}"/out/target/product/"${DEVICE}"
 # Enter your full upload command here inside quotes to enable it, make sure you enter part of filename as well
