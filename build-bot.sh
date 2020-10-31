@@ -46,6 +46,7 @@ build_rom() {
 <strong>CPUs :</strong> $(nproc --all) <strong>|</strong> <strong>RAM :</strong> $(awk '/MemTotal/ { printf "%.1f \n", $2/1024/1024 }' /proc/meminfo)GB
 <strong>Building :</strong> ${ROM_NAME}
 <strong>Build Type :</strong> ${BUILD_TYPE}
+<strong>Device :</strong> ${DEVICE}
 <strong>Target :</strong> ${TARGET}
 <strong>CPUs :</strong> $(nproc --all) <strong> | </strong> <strong>RAM :</strong> $(awk '/MemTotal/ { printf "%.1f \n", $2/1024/1024 }' /proc/meminfo)GB
 _EOL_
