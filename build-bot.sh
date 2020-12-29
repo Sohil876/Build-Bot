@@ -49,7 +49,6 @@ build_rom() {
 <strong>Build Type :</strong> ${BUILD_TYPE}
 <strong>Device :</strong> ${DEVICE}
 <strong>Target :</strong> ${TARGET}
-<strong>CPUs :</strong> $(nproc --all) <strong> | </strong> <strong>RAM :</strong> $(awk '/MemTotal/ { printf "%.1f \n", $2/1024/1024 }' /proc/meminfo)GB
 _EOL_
   curl -s -X POST -d chat_id="${CHAT_ID}" -d parse_mode=html -d text="${MESSAGE}" https://api.telegram.org/bot"${TOKEN}"/sendMessage
   # Start the build
@@ -70,7 +69,7 @@ _EOL_
 <strong>Time :</strong> $((DIFF / 60)) minutes and $((DIFF % 60)) seconds
 <strong>Date :</strong> $(date +"%Y-%m-%d")
 _EOL_
-  curl -s -X POST -d chat_id=$CHAT_ID -d parse_mode=html -d text="${MESSAGE}" https://api.telegram.org/bot"${TOKEN}"/sendMessage
+  curl -s -X POST -d chat_id="${CHAT_ID}" -d parse_mode=html -d text="${MESSAGE}" https://api.telegram.org/bot"${TOKEN}"/sendMessage
   curl -F chat_id="${CHAT_ID}" -F document=@"${ROM_FOLDER}"/"${ROM}"-build.log -F caption="" https://api.telegram.org/bot"${TOKEN}"/sendDocument
   # Autoupload if set
   if [ "$AUTO_UPLOAD" = false ]; then
@@ -102,6 +101,14 @@ check_rom_dir() {
   fi
 }
 
+clear_ram() {
+  # Cleaning RAM
+  sudo sh -c "sync"
+  sudo sh -c "echo 3 > /proc/sys/vm/drop_caches"
+  echo "RAM CLEARED!"
+  free -h
+}
+
 device_clean() {
   check_rom_dir
   source conf.rom
@@ -112,17 +119,12 @@ device_clean() {
   make deviceclean -j$( nproc --all )
 }
 
-free_up_ram() {
-  # Cleaning RAM
-  sudo sh -c "sync"
-  sudo sh -c "echo 3 > /proc/sys/vm/drop_caches"
-}
-
 help() {
   cat <<-_EOL_
 $(echo -e "${green}Usage:${nocol}")
 -h,  --help             Shows brief help
 -i,  --install          Install Build-Bot in /usr/bin
+-cr,  --clear-ram       Clears RAM, if you need to free up ram for some reason
 -ec, --export-config    Exports a sample config file to your current rom directory
 -dc, --device-clean     Do device clean, removes whole out dir for clean building
 -ic, --install-clean    Do installclean for faster build
@@ -159,7 +161,7 @@ _EOL_
   if [ "${SYNC_ARGUMENTS}" = false ]; then
     repo sync
   else
-    repo sync ${SYNC_ARGUMENTS}
+    repo sync "${SYNC_ARGUMENTS}"
   fi
   SYNC_END=$(date +"%s")
   DIFF=$((SYNC_END - SYNC_START))
@@ -184,6 +186,12 @@ case ${@} in
   -br|--build-rom)
     echo ""
     build_rom
+    echo ""
+    exit 0
+  ;;
+  -cr|--clear-ram)
+    echo ""
+    clear_ram
     echo ""
     exit 0
   ;;
@@ -254,7 +262,8 @@ _EOL_
       echo "${red}Permission denied, re-run command with sudo!${nocol}"
       exit 1
     else
-      chmod +x /usr/bin/build-bot
+      rm /usr/bin/build-bot
+      chmod +x /usr/bin/bbot
     fi
     echo "${green}Installed Build-Bot!${nocol}"
     echo "You can now use build-bot from any dir, just use ${green}bbot${nocol} command"
