@@ -30,7 +30,6 @@ build_rom() {
   # Configuring build
   source build/envsetup.sh
   lunch "${ROM}"_"${DEVICE}"-"${TARGET}"
-  free_up_ram
   # Start Build!
   BUILD_START=$(date +"%s")
   # Precompile Metalava if enabled in config
@@ -38,7 +37,6 @@ build_rom() {
     echo "PreCompiling Metalava!"
     make api-stubs-docs -j$( nproc --all ) && make hiddenapi-lists-docs -j$( nproc --all ) && make system-api-stubs-docs -j$( nproc --all ) && make test-api-stubs-docs -j$( nproc --all ) 2>&1 | tee "${ROM}"-build-metalava.log
   fi
-  free_up_ram
   # Report to tg group/channel
   read -r -d '' MESSAGE <<-_EOL_
 <strong>Build Started!</strong>
@@ -103,7 +101,6 @@ check_rom_dir() {
 
 clean_build() {
   check_rom_dir
-  free_up_ram
   source conf.rom
   source build/envsetup.sh
   # Start Cleaning
@@ -133,7 +130,6 @@ _EOL_
 
 shallow_clean() {
   check_rom_dir
-  free_up_ram
   # Import config/scripts from rom directory
   source conf.rom
   source build/envsetup.sh
@@ -146,7 +142,6 @@ shallow_clean() {
 sync_rom() {
   check_rom_dir
   check_config_file
-  free_up_ram
   source conf.rom
   SYNC_START=$(date +"%s")
   # Report to tg group/channel
