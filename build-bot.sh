@@ -12,6 +12,9 @@ cyan='\e[0;36m'          # Cyan
 white='\e[0;37m'        # White
 nocol='\033[0m'         # Default
 
+### Variables ###
+ROM_FOLDER="${PWD}" # For getting location of rom directory root
+
 ### Functions ###
 banner() {
   echo -e "${green}--------------------------------------"
@@ -205,10 +208,9 @@ ROM="bliss"
 DEVICE="tissot"
 TARGET="user"
 BUILD_TYPE="OFFICIAL"
-PRECOMPILE_METALAVA="false" # Enable if less than 16GB RAM
+PRECOMPILE_METALAVA="false" # Only enable for AndroidQ and below versions!. Enable if less than 16GB RAM
 SYNC_ARGUMENTS="false" # Set arguments in here to use them with sync, ex "-c -j$(nproc --all) --no-tags --no-clone-bundle --force-sync"
 MAKE_COMMAND="blissify tissot" # Enter your full build command inside quotes, ex. mka bacon, blissify tissot, ./rom-build.sh, etc
-ROM_FOLDER="${PWD}" # Use for getting location of your rom directory root
 SHUTDOWN_AFTER_SYNC="false" # Set to true to shutdown after syncing
 SHUTDOWN_TIME="5" # Minutes after which the bot will trigger shutdown when specifed
 OUT="${ROM_FOLDER}"/out/target/product/"${DEVICE}"
@@ -247,14 +249,16 @@ _EOL_
   ;;
   -i|--install)
     echo ""
-    cp -f "${PWD}"/build-bot.sh /usr/bin/build-bot
+    cp -f "${PWD}"/build-bot.sh /usr/bin/bbot
     if [ $? -ne 0 ]; then
-      echo "Permission denied, re-run command with sudo!"
+      echo "${red}Permission denied, re-run command with sudo!${nocol}"
       exit 1
     else
       chmod +x /usr/bin/build-bot
     fi
-    echo "Installed Build-Bot!"
+    echo "${green}Installed Build-Bot!${nocol}"
+    echo "You can now use build-bot from any dir, just use ${green}bbot${nocol} command"
+    echo "For example, type ${green}bbot -h${nocol} for help"
     echo "Make use of conf files to use build-bot with multiple roms!"
     echo ""
     exit 0
