@@ -99,14 +99,14 @@ check_rom_dir() {
   fi
 }
 
-clean_build() {
+device_clean() {
   check_rom_dir
   source conf.rom
   source build/envsetup.sh
   # Start Cleaning
-  echo "Cleaning build ... "
-  echo "${green}This can take 15 mins! Do not Cancel! ${nocol}"
-  make clobber -j$( nproc --all ) && make clean -j$( nproc --all )
+  echo "Running DeviceClean on build... "
+  echo "${green}This can take from 5-15 mins! Do not Cancel! ${nocol}"
+  make deviceclean -j$( nproc --all )
 }
 
 free_up_ram() {
@@ -121,22 +121,22 @@ $(echo -e "${green}Usage:${nocol}")
 -h,  --help             Shows brief help
 -i,  --install          Install Build-Bot in /usr/bin
 -ec, --export-config    Exports a sample config file to your current rom directory
--cb, --clean-build      Do make clobber and clean on build
--sc, --shallow-clean    Do installclean and deviceclean for faster build
+-dc, --device-clean     Do device clean, removes whole out dir for clean building
+-ic, --install-clean    Do installclean for faster build
 -sr, --sync-rom         Sync rom
 -br, --build-rom        Build rom
 _EOL_
 }
 
-shallow_clean() {
+install_clean() {
   check_rom_dir
   # Import config/scripts from rom directory
   source conf.rom
   source build/envsetup.sh
   # Start cleaning
-  echo "Cleaning build ... "
-  echo "${green}This can take 5 to 10 mins! Do not Cancel! ${nocol}"
-  make installclean -j$( nproc --all ) && make deviceclean -j$( nproc --all )
+  echo "Running InstallClean on build... "
+  echo "${green}This can take 2-5 mins! Do not Cancel! ${nocol}"
+  make installclean -j$( nproc --all )
 }
 
 sync_rom() {
@@ -184,9 +184,9 @@ case ${@} in
     echo ""
     exit 0
   ;;
-  -cb|--clean-build)
+  -dc|--device-clean)
     echo ""
-    clean_build
+    device_clean
     echo ""
     exit 0
   ;;
@@ -259,9 +259,9 @@ _EOL_
     echo ""
     exit 0
   ;;
-  -sc|--shallow-clean)
+  -ic|--install-clean)
     echo ""
-    shallow_clean
+    install_clean
     echo ""
     exit 0
   ;;
