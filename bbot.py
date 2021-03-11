@@ -6,11 +6,16 @@
 #
 
 from configparser import ConfigParser
+from datetime import datetime
 from os import getcwd, path
 from pyfiglet import figlet_format
+from subprocess import call
 from sys import argv as arg, exit as sys_exit
+from time import gmtime, strftime, time
+from telegram import Bot, ParseMode
 
 # Vars
+today = datetime.now().strftime('%I:%M %p | %d/%m/%Y')
 rom_folder = getcwd() # For getting location of rom directory root
 config = ConfigParser(allow_no_value=True)
 configfile_name = rom_folder + '/bbot.conf'
@@ -23,7 +28,8 @@ if path.isfile(configfile_name):
     build_command = config['build']['build_command']
     sync_arguments = config['sync']['sync_arguments']
     out = rom_folder + '/out/target/product/' + rom_device
-
+    bot = Bot(token=config['other']['token'])
+    chat_id = config['other']['chat_id']
 
 #Functions
 def check_conf_file():
@@ -57,7 +63,7 @@ def bbot_conf_export():
         config.set('build', 'shutdown_after_build', 'false')
         config.add_section('other')
         config.set('other', 'shutdown_time', '7')
-        config.set('other', 'token', 'UR_TOKEN')
+        config.set('other', 'token', 'UR_BOT_TOKEN')
         config.set('other', 'chat_id', 'UR TELEGRAM CHANNEL/GROUP ID')
         with open(configfile_name, 'w') as configfile:
             config.write(configfile)
@@ -70,13 +76,43 @@ def bbot_help():
 {figlet_format("By :- Sohil876", font="digital")}
   -ec   Exports a sample config file to your current rom directory
   -h    Shows brief help
+  -sr   Sync rom
   ''')
+
+def bbot_sync_rom():
+    if check_rom_dir() == True:
+        pass
+    else:
+        print('You need to be in the root of rom directory!')
+        sys_exit(1)
+    if check_conf_file() == True:
+        pass
+    else:
+        print('You need to export and configure the config file first!')
+        sys_exit(1)
+    # Start sync
+    start_time = time()
+    message = (
+    f'<b>Sync Started!</b>\n'
+    f'<b>@</b> {today}\n'
+    f'<b>Syncing :</b> {rom_name}'
+    )
+    bot.send_message(chat_id=chat_id, text=message, parse_mode=ParseMode.HTML)
+    call(f"bash -c 'unbuffer repo {sync_arguments} 2>&1 | tee {rom_folder}/{rom_code_name}-sync.log'", universal_newlines=True, shell=True)
+    total_time = strftime("%H:%M:%S", gmtime(round(time() - start_time)))
+    message = (
+    f'<b>Sync Finished!</b>\n'
+    f'<b>Time :</b> {total_time}'
+    )
+    bot.send_document(chat_id=chat_id, caption=message, parse_mode=ParseMode.HTML, document=open(f'{rom_folder}/{rom_code_name}-sync.log', 'rb'))
+
 
 # Switch case implementation
 #arg = argv
 switcher = {
     '-ec' : bbot_conf_export,
     '-h'  : bbot_help,
+    '-sr' : bbot_sync_rom,
     }
 
 if len(arg) == 2 and arg[1] in switcher:
