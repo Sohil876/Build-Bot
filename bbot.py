@@ -7,16 +7,19 @@
 
 from configparser import ConfigParser
 from datetime import datetime
-from os import getcwd, path
+from glob import glob
+from os import getcwd, listdir, path, remove
+from psutil import cpu_count, virtual_memory
 from pyfiglet import figlet_format
 from subprocess import call
 from sys import argv as arg, exit as sys_exit
 from time import gmtime, strftime, time
 from telegram import Bot, ParseMode
 
+
 # Vars
 today = datetime.now().strftime('%I:%M %p | %d/%m/%Y')
-rom_folder = getcwd() # For getting location of rom directory root
+rom_folder = getcwd()
 config = ConfigParser(allow_no_value=True)
 configfile_name = rom_folder + '/bbot.conf'
 if path.isfile(configfile_name):
@@ -31,7 +34,53 @@ if path.isfile(configfile_name):
     bot = Bot(token=config['other']['token'])
     chat_id = config['other']['chat_id']
 
-#Functions
+# Functions
+def build_rom():
+    if check_rom_dir() == True:
+        pass
+    else:
+        print('You need to be in the root of rom directory!')
+        sys_exit(1)
+    if check_conf_file() == True:
+        pass
+    else:
+        print('You need to export and configure the config file first!')
+        sys_exit(1)
+    if path.isdir(out):
+        for file in listdir(out):
+            if file.endswith('.zip') or file.endswith('.md5'):
+                remove(out + '/' + file)
+    # Start Build
+    start_time = time()
+    message = (
+    f'<b>Build Started!</b>\n'
+    f'<b>@</b> {today}\n'
+    f'<b>CPUs :</b> {cpu_count(logical=True)} <b>|</b> <b>RAM :</b> {get_size(virtual_memory().total)}\n'
+    f'<b>Building :</b> {rom_name}\n'
+    f'<b>Build Type :</b> {config["rom"]["build_type"]}\n'
+    f'<b>Device :</b> {rom_device}\n'
+    f'<b>Target :</b> {rom_target}'
+    )
+    bot.send_message(chat_id=chat_id, text=message, parse_mode=ParseMode.HTML)
+    call(f'unbuffer bash -c "source build/envsetup.sh && lunch {rom_code_name}_{rom_device}-{rom_target} 2>&1 | tee {rom_folder}/{rom_code_name}-build.log && {build_command} 2>&1 | tee -a {rom_folder}/{rom_code_name}-build.log"', universal_newlines=True, shell=True)
+    # Build failed
+    if len(glob(out + '/' + '*.zip')) == 0:
+        total_time = strftime("%H:%M:%S", gmtime(round(time() - start_time)))
+        print('Build Failed!')
+        message = (
+        f'<b>BUILD FAILED!</b>\n'
+        f'<b>Time :</b> {total_time}'
+        )
+        bot.send_document(chat_id=chat_id, caption=message, parse_mode=ParseMode.HTML, document=open(f'{rom_folder}/{rom_code_name}-build.log', 'rb'))
+        sys_exit(1)
+    # Build Sucessfull
+    total_time = strftime('%H:%M:%S', gmtime(round(time() - start_time)))
+    message = (
+    f'<b>BUILD SUCCESSFULL!</b>\n'
+    f'<b>Time :</b> {total_time} minutes'
+    )
+    bot.send_document(chat_id=chat_id, caption=message, parse_mode=ParseMode.HTML, document=open(f'{rom_folder}/{rom_code_name}-build.log', 'rb'))
+
 def check_conf_file():
     if path.isfile(configfile_name):
         return True
@@ -70,13 +119,21 @@ def bbot_conf_export():
         configfile.close()
         print('Exported configfile!')
 
+def get_size(inbytes, suffix="B"):
+    factor = 1024
+    for unit in ["", "K", "M", "G", "T", "P"]:
+        if inbytes < factor:
+            return f"{inbytes:.2f}{unit}{suffix}"
+        inbytes /= factor
+
 def bbot_help():
     print(f'''
 {figlet_format("Build-Bot", font="letters")}
 {figlet_format("By :- Sohil876", font="digital")}
-  -ec   Exports a sample config file to your current rom directory
   -h    Shows brief help
+  -ec   Exports a sample config file to your current rom directory
   -sr   Sync rom
+  -br   Build rom
   ''')
 
 def bbot_sync_rom():
@@ -98,7 +155,8 @@ def bbot_sync_rom():
     f'<b>Syncing :</b> {rom_name}'
     )
     bot.send_message(chat_id=chat_id, text=message, parse_mode=ParseMode.HTML)
-    call(f"bash -c 'unbuffer repo {sync_arguments} 2>&1 | tee {rom_folder}/{rom_code_name}-sync.log'", universal_newlines=True, shell=True)
+    call(f'bash -c "unbuffer repo {sync_arguments} 2>&1 | tee {rom_folder}/{rom_code_name}-sync.log"', universal_newlines=True, shell=True)
+    # Sync Finished
     total_time = strftime("%H:%M:%S", gmtime(round(time() - start_time)))
     message = (
     f'<b>Sync Finished!</b>\n'
@@ -108,8 +166,8 @@ def bbot_sync_rom():
 
 
 # Switch case implementation
-#arg = argv
 switcher = {
+    '-br' : build_rom,
     '-ec' : bbot_conf_export,
     '-h'  : bbot_help,
     '-sr' : bbot_sync_rom,
