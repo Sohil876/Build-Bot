@@ -93,6 +93,12 @@ def check_rom_dir():
     else:
         return False
 
+def clear_ram():
+    call('sudo sh -c "sync"', shell=True)
+    call('sudo sh -c "echo 3 > /proc/sys/vm/drop_caches"', shell=True)
+    print('RAM CLEARED!')
+    call('free -h', shell=True)
+
 def bbot_conf_export():
     if check_conf_file() == True:
         print('Config file already exists!')
@@ -128,11 +134,11 @@ def device_clean():
         print('Make sure you are in rom directory!')
         sys_exit(1)
 
-def get_size(inbytes, suffix="B"):
+def get_size(inbytes, suffix='B'):
     factor = 1024
-    for unit in ["", "K", "M", "G", "T", "P"]:
+    for unit in ['', 'K', 'M', 'G', 'T', 'P']:
         if inbytes < factor:
-            return f"{inbytes:.2f}{unit}{suffix}"
+            return f'{inbytes:.2f}{unit}{suffix}'
         inbytes /= factor
 
 def bbot_help():
@@ -145,6 +151,7 @@ def bbot_help():
   -br   Build rom
   -dc   Do device clean, removes whole out dir for clean building
   -ic   Do installclean for faster build
+  -cr   Clears RAM, if you need to free up ram for some reason
   ''')
 
 def install_clean():
@@ -188,6 +195,7 @@ def bbot_sync_rom():
 # Switch case implementation
 switcher = {
     '-br' : build_rom,
+    '-cr' : clear_ram,
     '-dc' : device_clean,
     '-ec' : bbot_conf_export,
     '-h'  : bbot_help,
