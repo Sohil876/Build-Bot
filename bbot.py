@@ -119,6 +119,15 @@ def bbot_conf_export():
         configfile.close()
         print('Exported configfile!')
 
+def device_clean():
+    if check_rom_dir() == True:
+        call('bash -c "source build/envsetup.sh && make installclean -j$(nproc --all)"', shell=True)
+        print('Running DeviceClean on build...')
+        print('This can take from 5-15 mins! Do not Cancel!')
+    else:
+        print('Make sure you are in rom directory!')
+        sys_exit(1)
+
 def get_size(inbytes, suffix="B"):
     factor = 1024
     for unit in ["", "K", "M", "G", "T", "P"]:
@@ -134,7 +143,18 @@ def bbot_help():
   -ec   Exports a sample config file to your current rom directory
   -sr   Sync rom
   -br   Build rom
+  -dc   Do device clean, removes whole out dir for clean building
+  -ic   Do installclean for faster build
   ''')
+
+def install_clean():
+    if check_rom_dir() == True:
+        call('bash -c "source build/envsetup.sh && make deviceclean -j$(nproc --all)"', shell=True)
+        print('Running DeviceClean on build...')
+        print('This can take from 5-15 mins! Do not Cancel!')
+    else:
+        print('Make sure you are in rom directory!')
+        sys_exit(1)
 
 def bbot_sync_rom():
     if check_rom_dir() == True:
@@ -168,8 +188,10 @@ def bbot_sync_rom():
 # Switch case implementation
 switcher = {
     '-br' : build_rom,
+    '-dc' : device_clean,
     '-ec' : bbot_conf_export,
     '-h'  : bbot_help,
+    '-ic' : install_clean,
     '-sr' : bbot_sync_rom,
     }
 
