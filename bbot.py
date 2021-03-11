@@ -36,14 +36,10 @@ if path.isfile(configfile_name):
 
 # Functions
 def build_rom():
-    if check_rom_dir() == True:
-        pass
-    else:
+    if check_rom_dir() == False:
         print('You need to be in the root of rom directory!')
         sys_exit(1)
-    if check_conf_file() == True:
-        pass
-    else:
+    if check_conf_file() == False:
         print('You need to export and configure the config file first!')
         sys_exit(1)
     if path.isdir(out):
@@ -102,6 +98,9 @@ def clear_ram():
 def bbot_conf_export():
     if check_conf_file() == True:
         print('Config file already exists!')
+        sys_exit(0)
+    elif check_rom_dir() == False:
+        print('You need to be in rom root dir to export config!')
         sys_exit(1)
     else:
         config.add_section('rom')
@@ -164,14 +163,10 @@ def install_clean():
         sys_exit(1)
 
 def bbot_sync_rom():
-    if check_rom_dir() == True:
-        pass
-    else:
+    if check_rom_dir() == False:
         print('You need to be in the root of rom directory!')
         sys_exit(1)
-    if check_conf_file() == True:
-        pass
-    else:
+    if check_conf_file() == False:
         print('You need to export and configure the config file first!')
         sys_exit(1)
     # Start sync
@@ -190,7 +185,7 @@ def bbot_sync_rom():
     f'<b>Time :</b> {total_time}'
     )
     bot.send_document(chat_id=chat_id, caption=message, parse_mode=ParseMode.HTML, document=open(f'{rom_folder}/{rom_code_name}-sync.log', 'rb'))
-
+    
 
 # Switch case implementation
 switcher = {
