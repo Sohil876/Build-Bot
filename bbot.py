@@ -68,7 +68,13 @@ def build_rom():
         f'<b>Time :</b> {total_time}'
         )
         bot.send_document(chat_id=chat_id, caption=message, parse_mode=ParseMode.HTML, document=open(f'{rom_folder}/{rom_code_name}-build.log', 'rb'))
-        sys_exit(1)
+        # Shutdown if enabled with defined time in bbot.conf file in minutes
+        if config['build']['shutdown_after_build'].lower() == 'true':
+            print('Auto shutdown is enabled!')
+            print(f'System will shutdown in {config["other"]["shutdown_time"]} minutes!')
+            call(['sleep', f'{config["other"]["shutdown_time"]}m'])
+            call(['sudo', 'shutdown', '-h', 'now'])
+            sys_exit(1)
     # Build Sucessfull
     total_time = strftime('%H:%M:%S', gmtime(round(time() - start_time)))
     message = (
@@ -76,6 +82,12 @@ def build_rom():
     f'<b>Time :</b> {total_time} minutes'
     )
     bot.send_document(chat_id=chat_id, caption=message, parse_mode=ParseMode.HTML, document=open(f'{rom_folder}/{rom_code_name}-build.log', 'rb'))
+    # Shutdown if enabled with defined time in bbot.conf file in minutes
+    if config['build']['shutdown_after_build'].lower() == 'true':
+        print('Auto shutdown is enabled!')
+        print(f'System will shutdown in {config["other"]["shutdown_time"]} minutes!')
+        call(['sleep', f'{config["other"]["shutdown_time"]}m'])
+        call(['sudo', 'shutdown', '-h', 'now'])
 
 def check_conf_file():
     if path.isfile(configfile_name):
@@ -111,10 +123,10 @@ def bbot_conf_export():
         config.set('rom', 'build_type', 'OFFICIAL')
         config.add_section('sync')
         config.set('sync', 'sync_arguments', 'sync -c -j$(nproc --all) --no-tags --no-clone-bundle --optimized-fetch --prune')
-        config.set('sync','shutdown_after_sync', 'false')
+        config.set('sync','shutdown_after_sync', 'False')
         config.add_section('build')
         config.set('build', 'build_command', 'blissify tissot')
-        config.set('build', 'shutdown_after_build', 'false')
+        config.set('build', 'shutdown_after_build', 'False')
         config.add_section('other')
         config.set('other', 'shutdown_time', '7')
         config.set('other', 'token', 'UR_BOT_TOKEN')
@@ -185,6 +197,12 @@ def bbot_sync_rom():
     f'<b>Time :</b> {total_time}'
     )
     bot.send_document(chat_id=chat_id, caption=message, parse_mode=ParseMode.HTML, document=open(f'{rom_folder}/{rom_code_name}-sync.log', 'rb'))
+    # Shutdown if enabled with defined time in bbot.conf file in minutes
+    if config['sync']['shutdown_after_sync'].lower() == 'true':
+        print('Auto shutdown is enabled!')
+        print(f'System will shutdown in {config["other"]["shutdown_time"]} minutes!')
+        call(['sleep', f'{config["other"]["shutdown_time"]}m'])
+        call(['sudo', 'shutdown', '-h', 'now'])
     
 
 # Switch case implementation
