@@ -35,6 +35,13 @@ if path.isfile(configfile_name):
     chat_id = config['other']['chat_id']
 
 # Functions
+def auto_shutdown(a,b):
+    if config[f'{a}'][f'{b}'].lower() == 'true':
+        print('Auto shutdown is enabled!')
+        print(f'System will shutdown in {config["other"]["shutdown_time"]} minutes!')
+        call(['sleep', f'{config["other"]["shutdown_time"]}m'], shell=False)
+        call(['sudo', 'shutdown', '-h', 'now'], shell=False)
+
 def build_rom():
     if check_rom_dir() == False:
         print('You need to be in the root of rom directory!')
@@ -69,12 +76,8 @@ def build_rom():
         )
         bot.send_document(chat_id=chat_id, caption=message, parse_mode=ParseMode.HTML, document=open(f'{rom_folder}/{rom_code_name}-build.log', 'rb'))
         # Shutdown if enabled with defined time in bbot.conf file in minutes
-        if config['build']['shutdown_after_build'].lower() == 'true':
-            print('Auto shutdown is enabled!')
-            print(f'System will shutdown in {config["other"]["shutdown_time"]} minutes!')
-            call(['sleep', f'{config["other"]["shutdown_time"]}m'])
-            call(['sudo', 'shutdown', '-h', 'now'])
-            sys_exit(1)
+        auto_shutdown('build', 'shutdown_after_build')
+        sys_exit(1)
     # Build Sucessfull
     total_time = strftime('%H:%M:%S', gmtime(round(time() - start_time)))
     message = (
@@ -83,11 +86,7 @@ def build_rom():
     )
     bot.send_document(chat_id=chat_id, caption=message, parse_mode=ParseMode.HTML, document=open(f'{rom_folder}/{rom_code_name}-build.log', 'rb'))
     # Shutdown if enabled with defined time in bbot.conf file in minutes
-    if config['build']['shutdown_after_build'].lower() == 'true':
-        print('Auto shutdown is enabled!')
-        print(f'System will shutdown in {config["other"]["shutdown_time"]} minutes!')
-        call(['sleep', f'{config["other"]["shutdown_time"]}m'])
-        call(['sudo', 'shutdown', '-h', 'now'])
+    auto_shutdown('build', 'shutdown_after_build')
 
 def check_conf_file():
     if path.isfile(configfile_name):
@@ -102,10 +101,10 @@ def check_rom_dir():
         return False
 
 def clear_ram():
-    call('sudo sh -c "sync"', shell=True)
-    call('sudo sh -c "echo 3 > /proc/sys/vm/drop_caches"', shell=True)
+    call(['sudo', 'sh', '-c', 'sync'], shell=False)
+    call(['sudo', 'sh', '-c', 'echo 3 > /proc/sys/vm/drop_caches'], shell=False)
     print('RAM CLEARED!')
-    call('free -h', shell=True)
+    call(['free', '-h'], shell=False)
 
 def bbot_conf_export():
     if check_conf_file() == True:
@@ -198,12 +197,8 @@ def bbot_sync_rom():
     )
     bot.send_document(chat_id=chat_id, caption=message, parse_mode=ParseMode.HTML, document=open(f'{rom_folder}/{rom_code_name}-sync.log', 'rb'))
     # Shutdown if enabled with defined time in bbot.conf file in minutes
-    if config['sync']['shutdown_after_sync'].lower() == 'true':
-        print('Auto shutdown is enabled!')
-        print(f'System will shutdown in {config["other"]["shutdown_time"]} minutes!')
-        call(['sleep', f'{config["other"]["shutdown_time"]}m'])
-        call(['sudo', 'shutdown', '-h', 'now'])
-    
+    auto_shutdown('sync', 'shutdown_after_sync')
+
 
 # Switch case implementation
 switcher = {
@@ -223,4 +218,3 @@ else:
     print('Invalid argument!')
     print('See -h for list of arguments')
     sys_exit(1)
-
